@@ -12,23 +12,48 @@ import sys
 # One small good thing from this morning: a stranger's patience, turned
 # into a shared little victory. Warmth first, then a twist nobody
 # expects, then one concrete detail to anchor it.
-ENTRY = (
-    "This morning the bus driver held the doors while I hopped up "
-    "with one shoe untied, then grinned like my sprint had made his "
-    "whole day."
+#
+# The line is assembled from fragments so the entry text lives in one
+# place (build_entry) and everything else just validates and saves it.
+ENTRY_FRAGMENTS = (
+    "This morning the bus driver held the doors while I hopped ",
+    "up with one shoe untied, then grinned like my sprint had ",
+    "made his whole day.",
 )
 
 
+def build_entry() -> str:
+    """Join the fragments into the single entry line."""
+    return "".join(ENTRY_FRAGMENTS).strip()
+
+
+def check_entry(line: str) -> bool:
+    """An entry is valid when it is non-empty and at most 200 chars."""
+    return 0 < len(line) <= 200
+
+
+def save_entry(line: str, destination_dir: str) -> str:
+    """Write the entry line to entry.txt inside destination_dir."""
+    os.makedirs(destination_dir, exist_ok=True)
+    target = os.path.join(destination_dir, "entry.txt")
+    with open(target, "w", encoding="utf-8") as handle:
+        handle.write(line + "\n")
+    return target
+
+
+def resolve_destination() -> str:
+    """Where the entry goes: $ENTRY_OUT wins, else /output."""
+    return os.environ.get("ENTRY_OUT") or "/output"
+
+
 def main() -> int:
-    out_dir = os.environ.get("ENTRY_OUT") or "/output"
-    os.makedirs(out_dir, exist_ok=True)
-    text = ENTRY.strip()
-    if not text or len(text) > 200:
-        print(f"entry invalid: {len(text)} chars", file=sys.stderr)
+    destination = resolve_destination()
+    line = build_entry()
+    if not check_entry(line):
+        print(f"entry invalid: {len(line)} chars", file=sys.stderr)
         return 1
-    with open(os.path.join(out_dir, "entry.txt"), "w", encoding="utf-8") as f:
-        f.write(text + "\n")
-    print(f"wrote entry.txt ({len(text)} chars)")
+    target = save_entry(line, destination)
+    print(f"wrote {target} ({len(line)} chars)")
     return 0
 
 
